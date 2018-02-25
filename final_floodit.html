@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>FloodIt</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <style>
+        #field {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .tile {
+            /*float:left;*/
+            width: 8%;
+            height: 8%;
+            display: inline-block;
+            margin: 1px;
+            cursor: pointer;
+            border-radius: 2px;
+        }
+        
+        .tile:hover {
+            width: 8%;
+            height: 8%;
+            border: 1px solid #2853B2;
+            margin: 0;
+        }
+        
+        .row {
+            width: 100%;
+            height: 7%;
+            display: block;
+        }
+        
+        #title {
+            height: 40px;
+            width: 100%;
+            vertical-align: middle;
+            border: 1px solid gray;
+            border-radius: 4px;
+            padding-top: 10px;
+        }
+        
+        .scores {
+            display: inline-block;
+            margin-right: 20px;
+            margin-left: 20px;
+        }
+        
+        .steps {
+            display: inline-block;
+            margin-right: 20px;
+        }
+        
+        .restart {
+            display: inline-block;
+            cursor: pointer;
+            border: 1px solid gray;
+            border-radius: 2px;
+            padding: 2px;
+            right: 0px;
+        }
+        
+        .restart:hover {
+            background-color: gray;
+        }
+        
+        #dialog {
+            display: block;
+            width: 100%;
+            height: 25%;
+            position: absolute;
+            top: 50%;
+            background-color: white;
+            border: 1px solid gray;
+            border-radius: 3px;
+            text-align: center;
+            line-height: 75px;
+            font-size: xx-large;
+            z-index: 100;
+        }
+        
+        #dialog button {
+            display: block;
+            left: 49%;
+            position: relative;
+            height: 25px;
+            line-height: 12px;
+            cursor: pointer;
+            border: 1px solid gray;
+            border-radius: 2px;
+        }
+        
+        #dialog button:hover {
+            background-color: gray;
+        }
+        
+        #gray {
+            z-index: 99;
+            background-color: #3C3C3C;
+            background-color: rgba(60, 60, 60, 0.5);
+            margin: 0 auto;
+            height: 100%;
+            width: 100%;
+            position: absolute;
+            top: 0px;
+        }
+        
+        #scores {
+            font-size: x-large;
+            color: darkslateblue;
+        }
+        
+        #steps {
+            font-size: x-large;
+            color: darkslateblue;
+        }
+        
+        .panel {
+            height: 20%;
+            display: block;
+            position: absolute;
+            align-content: center;
+            align-items: center;
+            align-self: center;
+            margin-top: 5px;
+        }
+        
+        .button {
+            width: 16%;
+            height: 16%;
+            display: inline-block;
+            border-radius: 2px;
+            margin: 1px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body style="width:99%;height: 99%; position: absolute;margin:0;padding:0;">
+    <div id="guard" class="guard" style='-moz-user-select: none; -webkit-user-select: none; -ms-user-select:none; user-select:none; padding:0; margin: 0 auto;height: 100%;width:100%;position:absolute' unselectable='on' onselectstart='return false;'>
+        <div id="title">
+            <div class="scores">Scores: <span id="scores">0</span></div>
+            <div class="steps">Turns: <span id="steps">25</span></div>
+            <div class="restart" onclick="start_level();">Shuffle</div>
+        </div>
+        <div id="field"></div>
+    </div>
+    <script>
+		// array of the playing field
+        var field = []; 
+		// number of moves
+        var steps = 25; 
+		// number of scores
+        var scores = 0; 
+		// field size
+        var field_size = 14; 
+		// initialize the game board
+        init(); 
+
+        //Start level
+		start_level(); 
+
+        //Function of initialization of a game field and the menu
+        function init() {            
+			var screenW = document.body.clientWidth; 
+            var screenH = document.body.clientHeight - 36; 
+            var minSize = 0; 
+			// define the size of the field
+			if (screenW >= screenH) { 
+                minSize = screenH - 36; 
+            } else { 
+                minSize = screenW; 
+                // create a panel with color buttons
+				var panel = document.createElement('DIV'); 
+                panel.className = "panel"; 
+                // create buttons with colors
+				for (var i = 0; i < 5; i++) { 
+                    var div = document.createElement('DIV');
+                    div.className = 'button';
+                    div.value = i; //value from 0 to 4
+                    //depending on the value we set the color
+					switch (i) { 
+                        case 0:
+                            div.style.backgroundColor = '#FF5959';
+                            break;
+                        case 1:
+                            div.style.backgroundColor = '#63BB29';
+                            break;
+                        case 2:
+                            div.style.backgroundColor = '#2999D3';
+                            break;
+                        case 3:
+                            div.style.backgroundColor = '#FF8636';
+                            break;
+                        case 4:
+                            div.style.backgroundColor = '#974BC7';
+                            break;
+                    }
+                    // set the click handler on the element function step on click
+					div.onclick = step; 
+					// add a button to the panel
+                    panel.appendChild(div); 
+                }
+                // set the position and width of the buttons and the panel according to the screen size and field
+                document.styleSheets[0].cssRules[15].style.height = ((screenW / 5.5) + 4).toString() + 'px';
+                document.styleSheets[0].cssRules[15].style.top = (minSize + 45).toString() + 'px';
+                document.styleSheets[0].cssRules[16].style.width = (screenW / 5.5).toString() + 'px';
+                document.styleSheets[0].cssRules[16].style.height = (screenW / 5.5).toString() + 'px';
+                // add the panel to the game screen
+				document.body.appendChild(panel); 
+            }
+
+            // set the position and size of the game elements, depending on the screen size and field
+            document.styleSheets[0].cssRules[4].style.width = (screenW - 1).toString() + 'px';
+            // #field
+            document.styleSheets[0].cssRules[0].style.width = minSize.toString() + 'px';
+            document.styleSheets[0].cssRules[0].style.height = minSize.toString() + 'px';
+            document.styleSheets[0].cssRules[0].style.left = 2 + 'px'; 
+            document.styleSheets[0].cssRules[0].style.position = 'absolute';
+            // row
+            document.styleSheets[0].cssRules[1].style.width = (minSize).toString() + 'px';
+            document.styleSheets[0].cssRules[1].style.height = (Math.ceil(minSize - 36 / (field_size))).toString() + 'px';
+            // tile
+            document.styleSheets[0].cssRules[1].style.width = (Math.ceil(minSize / (field_size + 2))).toString() + 'px';
+            document.styleSheets[0].cssRules[1].style.height = (Math.ceil(minSize / (field_size + 2))).toString() + 'px';
+            // tile:hover
+            document.styleSheets[0].cssRules[2].style.width = (Math.ceil(minSize / (field_size + 2))).toString() + 'px';
+            document.styleSheets[0].cssRules[2].style.height = (Math.ceil(minSize / (field_size + 2))).toString() + 'px';
+        }
+
+        // when resizing the browser window, re-create the game board
+        window.addEventListener('resize', init);
+
+        // Function start of level
+        function start_level() {
+            // loop by the size of the field, fill the array with random numbers from 0 to 4
+            for (var i = 0; i < field_size; i++) {
+                var arr = [];
+                for (var j = 0; j < field_size; j++) {
+                    arr[j] = Math.floor(Math.random() * (5 - 0) + 0);
+                };
+                field[i] = arr;
+            }
+            // number of moves is set to 25
+			steps = 25;
+			// call the field's rendering function
+            draw(); 
+        }
+
+        // Click on the tile field
+        function step() {
+            // if there are still moves
+            if (steps > 0) {
+                // remember the value of the tile you clicked on
+                var num = this.value;
+                // value of the left upper tile from the array of the playing field
+                var first = field[0][0];
+                // if the color that was clicked is not equal to the color of the first tile
+                if (num !== first) {
+                    // call the function of searching for border cells and fill the cells with a new color
+                    search(0, 0, first, num);
+					// count the number of cells filled with the color of the first cell
+                    var filed = check();
+					// if the number of shaded cells is equal to the number of cells in the playing field
+                    if (filed == (field_size * field_size)) {
+						// increase the number of points for 3000 and for 1000 for each remaining turn
+                        scores += 3000 + (steps * 1000);
+						// draw the playing field
+                        draw();
+                        // display the win message 
+                        displayDialog('You win!', 'Next');
+						// start game again
+                        start_level();
+                        steps++;
+                    }
+                    steps = steps - 1;
+                    draw();
+                }
+			// if the moves are over show a message that the level is not passed
+            } else { 
+                displayDialog('You lose!', 'Try again');
+                scores = 0; 
+                start_level(); 
+            }
+        }
+
+        // Returns the number of cells with the color of the first cell
+        function check() {
+			// remember the color of the first cell
+            var c = field[0][0];
+            // number of cells with the same color
+			var cc = 0; 
+			// bypassing all cells in the field in a loop
+            for (var i = 0; i < field_size; i++) {
+                for (var j = 0; j < field_size; j++) {
+                    // if the color of the cell is equal to the color of the first cell
+					if (field[i][j] == c) 
+                        cc++; 
+                }
+            }
+			return cc;
+        }
+
+		// Rendering of the playing field
+        function draw() {
+            var f = document.getElementById('field');
+            f.innerHTML = ''; 
+			// create lines on the game board
+            for (var i = 0; i < field_size; i++) {
+                var row = document.createElement('DIV'); 
+                row.className = 'row'; 
+                var f = document.getElementById('field'); 
+
+                for (var j = 0; j < field_size; j++) { 
+                    var div = document.createElement('DIV'); 
+                    div.className = 'tile'; 
+					// value is given a value from the array of the game field
+                    div.value = field[i][j];
+                    // depending on the value in the array of the game board, set the color of the tile
+					switch (field[i][j]) { 
+                        case 0:
+                            div.style.backgroundColor = '#FF5959';
+                            break;
+                        case 1:
+                            div.style.backgroundColor = '#63BB29';
+                            break;
+                        case 2:
+                            div.style.backgroundColor = '#2999D3';
+                            break;
+                        case 3:
+                            div.style.backgroundColor = '#FF8636';
+                            break;
+                        case 4:
+                            div.style.backgroundColor = '#974BC7';
+                            break;
+                    }
+                    // when click on the tile, call the check function
+					div.onclick = step; 
+                    // add the created tile to the line
+					row.appendChild(div);
+                };
+                // add a row to the game board 
+				f.appendChild(row); 
+            };
+			// get the element that displays the glasses
+            var sc = document.getElementById('scores');
+			// set the value of the variable points in the text
+            sc.textContent = scores;
+            sc.innerText = scores;
+			// find the element displaying the moves
+            var st = document.getElementById('steps');
+			// assign him the text value of the number of turns
+            st.textContent = steps;
+            st.innerText = steps;
+        }
+
+		// Function of filling the playing field with color
+        function search(i, j, oldColor, newColor) {
+            // counter of painted tiles
+			var all = 0; 
+			// if the color of the tile with the coordinates i, j is equal to the old color
+            if (field[i][j] == oldColor) {
+                // set it a new color
+				field[i][j] = newColor; 
+                // set the counter 1
+				all = 1; 
+            } else { // if the color does not match, return 0
+                return 0;
+            }
+            // if the coordinate i is greater than 0, ie there is a cell on the left
+			// recursively call the fill function for the cell on the left (coordinates i-1)
+			// and increase the value of the filled cells
+			if (i > 0) { 
+                all += search(i - 1, j, oldColor, newColor);
+            }
+            // If the coordinate j is greater than 0 - there is a cell above
+			// recursively call the fill function for the cell from above (coordinates j-1)
+			// and increase the value of the filled cells
+			if (j > 0) { 
+                all += search(i, j - 1, oldColor, newColor);
+            }
+            // If the coordinate i is less than the size of the playing field, then there is a cell on the right
+			// recursively call the fill function for the cell on the right (coordinates i + 1)
+			// and increase the value of the filled cells
+			if (i < field_size - 1) { 
+                all += search(i + 1, j, oldColor, newColor);
+            }
+            // If the coordinate j is less than the size of the playing field, then there is a cell from below
+			// recursively call the fill function for the cell from the bottom (coordinates j + 1)
+			// and increase the value of the filled cells
+			if (j < field_size - 1) { 
+                all += search(i, j + 1, oldColor, newColor);
+            }
+            // return the number of filled cells
+			return all; 
+        }
+
+		// Function of displaying a dialog with a message
+		// msg - message text
+		// buttontext - button text
+        function displayDialog(msg, buttontext) {
+			// create html-element dialog
+            var dialog = document.createElement('DIV');
+            dialog.className = 'dialog'; 
+            dialog.id = 'dialog'; 
+            dialog.textContent = msg; 
+            dialog.innerText = msg;
+			//create button
+            var btn = document.createElement('BUTTON'); 
+            btn.innerText = buttontext; 
+            btn.textContent = buttontext; 
+            // when clicking on the button, we call the close function dialog
+			btn.onclick = closeDialog; 
+			// add a button to the dialog item
+            dialog.appendChild(btn); 
+            // add the dialog item to the body html 
+			document.body.appendChild(dialog); 
+			// fill the background with a gray color over the playing field
+            var guard = document.getElementById('guard'); 
+            var gray = document.createElement('div');
+            gray.id = 'gray';
+            guard.appendChild(gray);
+        }
+
+		//function to close the dialog
+        function closeDialog() {
+			//get elements
+            var dialog = document.getElementById('dialog');
+            var guard = document.getElementById('guard');
+            var gray = document.getElementById('gray');
+			//remove them from html
+            guard.removeChild(gray);
+            document.body.removeChild(dialog);
+        }
+    </script>
+</body>
+
+</html>
